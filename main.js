@@ -8,6 +8,7 @@ import { Coin } from "./build/Coin.js";
     const followedCoins = new Set();
     const liveReportsData = new Map();
 
+    //Event Listeners, Initilize context, fetch Data
     document.addEventListener("DOMContentLoaded", () => {
         fetchData();
         $("#menuBox").on("click", (event) => {
@@ -44,10 +45,11 @@ import { Coin } from "./build/Coin.js";
         window.closeSpecificCoinBox = closeSpecificCoinBox;
         window.closeChoose = closeChoose;
         window.chooseCoinToRemoveFromFollowList = chooseCoinToRemoveFromFollowList;
-        window.appendCoins = appendCoins;
+        window.renderCoins = renderCoins;
     });
 
 
+    // UI functions
     function scrollTo(location) {
         if ($(location).length) {
             $('html, body').animate({
@@ -68,7 +70,7 @@ import { Coin } from "./build/Coin.js";
         let position = 0;
         setTimeout(() => {
             loadingAnimationRef = setInterval(() => {
-                position += 2;
+                position += 5;
                 if (position > 900) position = 0;
                 $("#coinImg").css("transform", `translate(${position}px, 0)`);
             }, 5);
@@ -97,12 +99,13 @@ import { Coin } from "./build/Coin.js";
     };
 
 
+    //All Coins Data functions
     async function fetchData(dataSpecifications) {
         $("#searchBtn, #homeBtn, #liveReportsBtn").prop("disabled", true);
         loading();
         let cachedData = localStorage.getItem("allCoins");
         let jsonCoins;
-        let dataToAppend;
+        let dataToRender;
         if (cachedData) {
             try {
                 jsonCoins = JSON.parse(cachedData);
@@ -113,8 +116,8 @@ import { Coin } from "./build/Coin.js";
                     localStorage.removeItem("allCoins");
                     jsonCoins = null;
                 } else {
-                    dataToAppend = dataSpecifications ? getCoinsBySearchKey(dataSpecifications) : jsonCoins.data;
-                    appendCoins(dataToAppend, 0);
+                    dataToRender = dataSpecifications ? getCoinsBySearchKey(dataSpecifications) : jsonCoins.data;
+                    renderCoins(dataToRender, 0);
                     $("#searchBox").val("");
                     return;
                 }
@@ -135,8 +138,8 @@ import { Coin } from "./build/Coin.js";
                 const timeStamp = new Date();
                 jsonCoins = { timeStamp, data }
                 localStorage.setItem("allCoins", JSON.stringify(jsonCoins))
-                dataToAppend = dataSpecifications ? getCoinsBySearchKey(dataSpecifications) : jsonCoins.data;
-                appendCoins(dataToAppend, 0);
+                dataToRender = dataSpecifications ? getCoinsBySearchKey(dataSpecifications) : jsonCoins.data;
+                renderCoins(dataToRender, 0);
             } catch (error) {
                 console.error(error.message);
                 showError(error.message);
@@ -148,11 +151,12 @@ import { Coin } from "./build/Coin.js";
         const parsedCoins = JSON.parse(localStorage.getItem("allCoins"));
         const allCoins = parsedCoins.data;
         return allCoins.filter(coin => coin.id === searchKey || coin.name === searchKey || coin.symbol === searchKey)
-
     };
 
 
-    async function appendCoins(coins, minCoinIndex) {
+    //coin append and render
+    //edit
+    async function renderCoins(coins, minCoinIndex) {
         $("#mainBox").html("");
         if (!coins) {
             coins = JSON.parse(localStorage.getItem("allCoins")).data;
@@ -166,14 +170,14 @@ import { Coin } from "./build/Coin.js";
         $("#mainBox").append(`
             <div id="coinsBoxBtnBox">
                 <div>
-                    <button id="minCoinNumBtn" onclick="appendCoins(null,${Math.max(minCoinIndex - 200, 0)})">
+                    <button id="minCoinNumBtn" onclick="renderCoins(null,${Math.max(minCoinIndex - 200, 0)})">
                         <<< previous ${prevBtnText}
                     </button>
                 </div>
                 <div id="coinDisplayDiv">displaying coins ${minCoinIndex} - ${minCoinIndex + 200} out of ${coins.length}</div>
                 <div>
                     <button id="maxCoinNumBtn" ${minCoinIndex + 200 >= coins.length ? "disabled" : ""}
-                        onclick="appendCoins(null,${minCoinIndex + 200})">
+                        onclick="renderCoins(null,${minCoinIndex + 200})">
                         Next (${minCoinIndex + 200} - ${minCoinIndex + 400}) >>>
                     </button>
                 </div>
@@ -187,7 +191,7 @@ import { Coin } from "./build/Coin.js";
             const coinInstance = new Coin(coin.id, coin.name, coin.symbol);
             const coinDiv = document.createElement("div");
             coinDiv.className = "coin";
-            coinDiv.innerHTML = coinInstance.renderCoin();
+            coinDiv.innerHTML = coinInstance.AppendCoin();
             $("#coinsBox").append(coinDiv);
             // $(`#toggle_${coin.id}`).on("click",()=>{
             //     coinInstance.ABC();
@@ -195,7 +199,7 @@ import { Coin } from "./build/Coin.js";
         }
 
         const followedCoinsData = JSON.parse(localStorage.getItem("followedCoins"))
-        if (followedCoins) {
+        if (followedCoinsData) {
             for (const coin of followedCoinsData) {
                 addCoinToFollowedCoins(coin, false)
             }
@@ -204,6 +208,7 @@ import { Coin } from "./build/Coin.js";
     };
 
 
+    //Specific Coin Functions
     function addCoinToFollowedCoins(coinId, clicked) {
         if (followedCoins.has(coinId) && clicked) {
             followedCoins.delete(coinId);
@@ -212,6 +217,7 @@ import { Coin } from "./build/Coin.js";
                 "direction": "ltr",
                 "background-color": "transparent"
             });
+            localStorage.setItem("followedCoins", JSON.stringify([...followedCoins]));
             return;
         }
         if (followedCoins.size < 5) {
@@ -228,7 +234,7 @@ import { Coin } from "./build/Coin.js";
             const choiceText = `In order to add <span class="extraName">${coinId}</span> to  your follow list, choose up to 5 coins.
         un-select coins in order to proceed, or cancel`;
             chooseCoinToRemoveFromFollowList(followedCoins, coinId, choiceText)
-        }
+        }        
         localStorage.setItem("followedCoins", JSON.stringify([...followedCoins]));
     };
     async function showSpecificCoinBox(coinId) {
@@ -299,6 +305,7 @@ import { Coin } from "./build/Coin.js";
     };
 
 
+    //Follow List Functions
     function chooseCoinToRemoveFromFollowList(followedCoins, extraCoin, choiceText) {
         loading();
         $("#chooseCoinToStopFollowingBox").removeClass("hiddenChooseCoinToStopFollowingBox");
@@ -347,17 +354,17 @@ import { Coin } from "./build/Coin.js";
     };
     function toggleCoinFollow(coinId) {
         const relevantCoins = JSON.parse(localStorage.getItem("tempFollowedCoins"));
-        const removedCoins = JSON.parse(localStorage.getItem("deletedCoins"));
+        const deletedCoins = JSON.parse(localStorage.getItem("deletedCoins"));
         const relevantCoinsSet = new Set(relevantCoins);
-        const removedCoinsSet = new Set(removedCoins);
+        const deletedCoinsSet = new Set(deletedCoins);
         $(`#chooseInner${coinId}`).css("background-color", "#434343");
         $(`#choose${coinId}`).css("direction", "ltr");
-        removedCoinsSet.add(coinId);
+        deletedCoinsSet.add(coinId);
         if (relevantCoinsSet.has(coinId)) {
             relevantCoinsSet.delete(coinId);
         } else {
             relevantCoinsSet.add(coinId)
-            removedCoinsSet.delete(coinId);
+            deletedCoinsSet.delete(coinId);
             $(`#chooseInner${coinId}`).css("background-color", "#f59c2f");
             $(`#choose${coinId}`).css("direction", "rtl");
         }
@@ -366,7 +373,7 @@ import { Coin } from "./build/Coin.js";
         } else {
             $("#saveChangesChoose").css("cursor", "not-allowed");
         }
-        localStorage.setItem("deletedCoins", JSON.stringify(Array.from(removedCoinsSet)));
+        localStorage.setItem("deletedCoins", JSON.stringify(Array.from(deletedCoinsSet)));
         localStorage.setItem("tempFollowedCoins", JSON.stringify(Array.from(relevantCoinsSet)));
     };
     function saveChangesChooseFollowedCoins() {
@@ -379,8 +386,6 @@ import { Coin } from "./build/Coin.js";
         followedCoins.clear();
         for (const coin of deletedCoins) {
             followedCoins.add(coin);
-            //add coin to the followed coin set in order to reset its toggle and delete it
-            //from the Set by the function addCoinToFollowedCoins()
             addCoinToFollowedCoins(coin, true);
         }
         for (const coin of newCoins) {
@@ -395,6 +400,8 @@ import { Coin } from "./build/Coin.js";
         $('#chooseCoinToStopFollowingBox').addClass('hiddenChooseCoinToStopFollowingBox')
     };
 
+
+    //Live reports functions (based on Follow List)
     function showLiveReports() {
         try {
             const choiceText = "Current Coins On Follow List:<br>toggle to add/remove or go to Home page to add new coins"
@@ -410,24 +417,24 @@ import { Coin } from "./build/Coin.js";
             let firstLoad = true;
             liveReportsRef = setInterval(async () => {
                 const timeStamp = new Date();
-                const coinData = await getLiveReportCoinData()
+                const coinData = await getLiveReportCoinData();
                 if (!coinData) {
                     clearInterval(liveReportsRef);
                     throw new Error("failed to get coin data...");
-                }
-                const liveCoinData = { timeStamp, coinData }
-                appendLiveReports(liveCoinData, firstLoad);
+                };
+                const liveCoinData = { timeStamp, coinData };
+                RenderLiveReports(liveCoinData, firstLoad);
                 if (firstLoad) {
                     stopLoading();
                     firstLoad = false;
-                }
+                };
             }, 2000);
         } catch (error) {
             console.error(error);
             showError(error.message);
         }
     }
-    function appendLiveReports(liveCoinData, firstAppend) {
+    function RenderLiveReports(liveCoinData, firstAppend) {
         const coins = liveCoinData.coinData;
         for (const [coin, data] of Object.entries(coins)) {
             if (data && data.USD) {
