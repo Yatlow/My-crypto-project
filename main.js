@@ -155,7 +155,6 @@ import { Coin } from "./build/Coin.js";
 
 
     //coin append and render
-    //edit
     async function renderCoins(coins, minCoinIndex) {
         $("#mainBox").html("");
         if (!coins) {
@@ -193,9 +192,6 @@ import { Coin } from "./build/Coin.js";
             coinDiv.className = "coin";
             coinDiv.innerHTML = coinInstance.AppendCoin();
             $("#coinsBox").append(coinDiv);
-            // $(`#toggle_${coin.id}`).on("click",()=>{
-            //     coinInstance.ABC();
-            // })
         }
 
         const followedCoinsData = JSON.parse(localStorage.getItem("followedCoins"))
