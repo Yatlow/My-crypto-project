@@ -165,7 +165,7 @@ import { Coin } from "./build/Coin.js";
                 ;
             }
         };
-        const prevBtnText = minCoinIndex === 0 ? "": `(${minCoinIndex-200} - ${minCoinIndex})`;
+        const prevBtnText = minCoinIndex === 0 ? "" : `(${minCoinIndex - 200} - ${minCoinIndex})`;
         $("#mainBox").append(`
             <div id="coinsBoxBtnBox">
                 <div>
@@ -183,9 +183,9 @@ import { Coin } from "./build/Coin.js";
             </div>
         `);
         $("#mainBox").append(`<div id="coinsBox"></div>`);
-        
+
         const coinsToDisplay = coins.slice(minCoinIndex, minCoinIndex + 200);
-        
+
         for (const coin of coinsToDisplay) {
             const coinInstance = new Coin(coin.id, coin.name, coin.symbol);
             const coinDiv = document.createElement("div");
@@ -230,7 +230,7 @@ import { Coin } from "./build/Coin.js";
             const choiceText = `In order to add <span class="extraName">${coinId}</span> to  your follow list, choose up to 5 coins.
         un-select coins in order to proceed, or cancel`;
             chooseCoinToRemoveFromFollowList(followedCoins, coinId, choiceText)
-        }        
+        }
         localStorage.setItem("followedCoins", JSON.stringify([...followedCoins]));
     };
     async function showSpecificCoinBox(coinId) {
@@ -406,17 +406,47 @@ import { Coin } from "./build/Coin.js";
             $("#mainBox").html(`
                 <div id="ChangeFollowedCoinsFromLivePage">
                  Change Followed coins</div>
-                 <div id="chartContainer" style="height: 345px; width: 100%;"></div>`);
+                 <div id="chartContainer" style="height: 345px; width: 100%;"></div>
+                 <div id="invalidCoins"></div>
+                 `);
             $("#ChangeFollowedCoinsFromLivePage").on("click", () => {
                 chooseCoinToRemoveFromFollowList(followedCoins, '', choiceText);
             });
             let firstLoad = true;
             liveReportsRef = setInterval(async () => {
                 const timeStamp = new Date();
-                const coinData = await getLiveReportCoinData();
+                const allCoins = JSON.parse(localStorage.getItem("allCoins")).data;
+                const filteredSymbols = Object.values(allCoins)
+                    .filter(coin => followedCoins.has(coin.id))
+                    .map(coin => coin.symbol.toUpperCase());
+                const coinsString = filteredSymbols.join(',');
+                if (!filteredSymbols.length) {
+                    clearInterval(liveReportsRef);
+                    showError("No coins are followed to display")
+                }
+                const coinData = await getLiveReportCoinData(coinsString);
                 if (!coinData) {
                     clearInterval(liveReportsRef);
-                    throw new Error("failed to get coin data...");
+                    showError("failed to get coin data...");
+                } else{
+                    if (coinData.Response === "Error") {
+                        clearInterval(liveReportsRef);
+                        showError(`The Coins ${coinsString} do not exist in the API`);
+                    }
+                    else {
+                        const followedCoinsSymbolArray=coinsString.split(",");
+                        const validCoins=Object.keys(coinData);
+                        const invalidCoins= followedCoinsSymbolArray.filter(coin=>!validCoins.includes(coin))
+                        if (invalidCoins.length>0){
+                            $("#invalidCoins").html(`
+                            <div>
+                            the following coin symbols from your follow list, do not exist in our API:
+                            ${invalidCoins.join(",")}
+                            </div>
+                            `)
+                        }
+                    }
+
                 };
                 const liveCoinData = { timeStamp, coinData };
                 RenderLiveReports(liveCoinData, firstLoad);
@@ -499,17 +529,8 @@ import { Coin } from "./build/Coin.js";
             e.chart.render();
         }
     };
-    async function getLiveReportCoinData() {
+    async function getLiveReportCoinData(coinsString) {
         try {
-            const allCoins = JSON.parse(localStorage.getItem("allCoins")).data;
-            const filteredSymbols = Object.values(allCoins)
-                .filter(coin => followedCoins.has(coin.id))
-                .map(coin => coin.symbol);
-            const coinsString = filteredSymbols.join(',');
-            if (!filteredSymbols.length) {
-                clearInterval(liveReportsRef);
-                throw new Error("No coins are followed to display")
-            }
             const url = `https://min-api.cryptocompare.com/data/pricemulti?fsyms=${coinsString}&tsyms=USD`;
             const liveCoinData = await axios.get(url);
             return liveCoinData.data;
