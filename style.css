@@ -216,7 +216,7 @@ html {
     justify-content: center;
     gap: 15%;
 }
-#minCoinNumBtn, #maxCoinNumBtn,#coinDisplayDiv{
+#minCoinNumBtn, #maxCoinNumBtn,#coinDisplayDiv, #searchResult{
     all: unset;
     padding: 10px;
     border-radius: 15px;
@@ -400,4 +400,7 @@ html {
     font-size: 12px;
     font-weight: bold;
     z-index: 1;
+}
+#searchResult{
+    cursor: default;
 }

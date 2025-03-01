@@ -117,7 +117,7 @@ import { Coin } from "./build/Coin.js";
                     jsonCoins = null;
                 } else {
                     dataToRender = dataSpecifications ? getCoinsBySearchKey(dataSpecifications) : jsonCoins.data;
-                    renderCoins(dataToRender, 0);
+                    renderCoins(dataToRender, 0, dataSpecifications);
                     $("#searchBox").val("");
                     return;
                 }
@@ -139,7 +139,7 @@ import { Coin } from "./build/Coin.js";
                 jsonCoins = { timeStamp, data }
                 localStorage.setItem("allCoins", JSON.stringify(jsonCoins))
                 dataToRender = dataSpecifications ? getCoinsBySearchKey(dataSpecifications) : jsonCoins.data;
-                renderCoins(dataToRender, 0);
+                renderCoins(dataToRender, 0, dataSpecifications);
             } catch (error) {
                 console.error(error.message);
                 showError(error.message);
@@ -155,7 +155,7 @@ import { Coin } from "./build/Coin.js";
 
 
     //coin append and render
-    async function renderCoins(coins, minCoinIndex) {
+    async function renderCoins(coins, minCoinIndex, dataSpecifications) {
         $("#mainBox").html("");
         if (!coins) {
             coins = JSON.parse(localStorage.getItem("allCoins")).data;
@@ -166,9 +166,7 @@ import { Coin } from "./build/Coin.js";
             }
         };
         const prevBtnText = minCoinIndex === 0 ? "" : `(${minCoinIndex - 200} - ${minCoinIndex})`;
-        $("#mainBox").append(`
-            <div id="coinsBoxBtnBox">
-                <div>
+        const buttonsDiv= `<div>
                     <button id="minCoinNumBtn" onclick="renderCoins(null,${Math.max(minCoinIndex - 200, 0)})">
                         <<< previous ${prevBtnText}
                     </button>
@@ -179,7 +177,13 @@ import { Coin } from "./build/Coin.js";
                         onclick="renderCoins(null,${minCoinIndex + 200})">
                         Next (${minCoinIndex + 200} - ${minCoinIndex + 400}) >>>
                     </button>
-                </div>
+                </div>`
+        let topDivInner = dataSpecifications? `<div id="searchResult">search results for ${dataSpecifications}: ${coins.length}</div>`: buttonsDiv;
+        if (coins.length>200 && dataSpecifications) topDivInner+= buttonsDiv;
+
+        $("#mainBox").append(`
+            <div id="coinsBoxBtnBox">
+              ${topDivInner}  
             </div>
         `);
         $("#mainBox").append(`<div id="coinsBox"></div>`);
@@ -428,16 +432,16 @@ import { Coin } from "./build/Coin.js";
                 if (!coinData) {
                     clearInterval(liveReportsRef);
                     showError("failed to get coin data...");
-                } else{
+                } else {
                     if (coinData.Response === "Error") {
                         clearInterval(liveReportsRef);
                         showError(`The Coins ${coinsString} do not exist in the API`);
                     }
                     else {
-                        const followedCoinsSymbolArray=coinsString.split(",");
-                        const validCoins=Object.keys(coinData);
-                        const invalidCoins= followedCoinsSymbolArray.filter(coin=>!validCoins.includes(coin))
-                        if (invalidCoins.length>0){
+                        const followedCoinsSymbolArray = coinsString.split(",");
+                        const validCoins = Object.keys(coinData);
+                        const invalidCoins = followedCoinsSymbolArray.filter(coin => !validCoins.includes(coin))
+                        if (invalidCoins.length > 0) {
                             $("#invalidCoins").html(`
                             <div>
                             the following coin symbols from your follow list, do not exist in our API:
