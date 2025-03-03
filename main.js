@@ -194,7 +194,7 @@ import { Coin } from "./build/Coin.js";
             const coinInstance = new Coin(coin.id, coin.name, coin.symbol);
             const coinDiv = document.createElement("div");
             coinDiv.className = "coin";
-            coinDiv.innerHTML = coinInstance.AppendCoin();
+            coinDiv.innerHTML = coinInstance.appendCoin();
             $("#coinsBox").append(coinDiv);
         }
 

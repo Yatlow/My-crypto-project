@@ -7,7 +7,7 @@ export class Coin {
         this.name = name;
         this.symbol = symbol;
     }
-    AppendCoin() {
+    appendCoin() {
         return `
         <div class="toggleBox">
         <span>add to follow list</span>
